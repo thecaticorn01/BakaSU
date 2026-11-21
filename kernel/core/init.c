@@ -38,6 +38,8 @@
 #include "infra/symbol_resolver.h"
 #include "preinit/preinit.h"
 #include "uapi/supercall.h"
+#include "compat/samsung_defex.h"
+#include "ksu_samsung_kdp.h"
 
 #ifdef CONFIG_ARM64
 #include "compat/apatch_conflict.h"
@@ -234,10 +236,30 @@ int __init kernelsu_init(void)
 
     pr_info("initializing symbol resolver\n");
     ksu_init_symbol_resolver();
+
+    // Detect Samsung KDP and install the credential-commit shim. Must run after
+    // the symbol resolver and before any root-grant cred commit.
+    ret = ksu_samsung_kdp_init();
+    if (ret) {
+        ksu_put_cred(ksu_cred);
+        ksu_cred = NULL;
+        return ret;
+    }
+
     ret = ksu_selinux_inode_init();
     if (ret) {
-        put_cred(ksu_cred);
+        ksu_put_cred(ksu_cred);
         ksu_cred = NULL;
+        ksu_samsung_kdp_exit();
+        return ret;
+    }
+
+    // Samsung DEFEX: bypass enforce + sync creds after a KSU UID transition.
+    ret = ksu_samsung_defex_init();
+    if (ret) {
+        ksu_put_cred(ksu_cred);
+        ksu_cred = NULL;
+        ksu_samsung_kdp_exit();
         return ret;
     }
 #ifdef CONFIG_ARM64
@@ -341,7 +363,9 @@ void __exit kernelsu_exit(void)
     ksu_feature_exit();
     ksu_module_blacklist_exit();
 
-    put_cred(ksu_cred);
+    ksu_samsung_defex_exit();
+    ksu_put_cred(ksu_cred);
+    ksu_samsung_kdp_exit();
 }
 
 #if NEED_OWN_STACKPROTECTOR

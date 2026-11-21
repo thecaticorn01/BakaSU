@@ -12,7 +12,28 @@ on:
         required: false
         default: ''
         type: string
+      samsung:
+        description: 'enable Samsung KDP/RKP/DEFEX late-load compat (aarch64)'
+        required: false
+        default: false
+        type: boolean
   workflow_dispatch:
+    inputs:
+      expected_pr_build_size:
+        description: 'Custom manager signature size'
+        required: false
+        default: ''
+        type: string
+      expected_pr_build_hash:
+        description: 'Custom manager signature hash'
+        required: false
+        default: ''
+        type: string
+      samsung:
+        description: 'enable Samsung KDP/RKP/DEFEX late-load compat (aarch64)'
+        required: false
+        default: false
+        type: boolean
 jobs:
   build-lkm:
     strategy:
@@ -36,3 +57,4 @@ jobs:
       arch: ${{ matrix.arch }}
       expected_pr_build_size: ${{ inputs.expected_pr_build_size || '' }}
       expected_pr_build_hash: ${{ inputs.expected_pr_build_hash || '' }}
+      samsung: ${{ inputs.samsung || false }}

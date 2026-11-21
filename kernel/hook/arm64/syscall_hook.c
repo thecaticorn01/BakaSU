@@ -445,9 +445,17 @@ void __init ksu_syscall_hook_init(void)
 #endif
     }
 
-    ksu_dispatcher_nr = ni_slot;
-    ksu_syscall_table_hook(ksu_dispatcher_nr, (syscall_fn_t)ksu_syscall_dispatcher, NULL);
-    pr_info("dispatcher installed at slot %d\n", ksu_dispatcher_nr);
+    ksu_syscall_table_hook(ni_slot, (syscall_fn_t)ksu_syscall_dispatcher, NULL);
+    // Confirm the write actually landed. On Samsung RKP (or with
+    // CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT) the syscall table is protected rodata and
+    // the write is refused; leave ksu_dispatcher_nr < 0 so the syscall-hook
+    // manager falls back to the Samsung kprobe path instead.
+    if (READ_ONCE(ksu_syscall_table[ni_slot]) == (syscall_fn_t)ksu_syscall_dispatcher) {
+        ksu_dispatcher_nr = ni_slot;
+        pr_info("dispatcher installed at slot %d\n", ksu_dispatcher_nr);
+    } else {
+        pr_warn("dispatcher slot write blocked (Samsung RKP?); using kprobe fallback\n");
+    }
 #ifdef CONFIG_COMPAT
 init_compat_dispatcher:
     memset(compat_syscall_hooks, 0, sizeof(compat_syscall_hooks));

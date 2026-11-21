@@ -27,4 +27,18 @@ ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK),y)
 ccflags-y += -DCONFIG_KSU_TRACEPOINT_HOOK
 endif
 
+# Samsung (KDP/RKP/DEFEX) late-load compatibility
+ifeq ($(CONFIG_KSU_SAMSUNG_KDP),y)
+ccflags-y += -DCONFIG_KSU_SAMSUNG_KDP=1
+endif
+ifeq ($(CONFIG_KSU_SAMSUNG_RKP),y)
+ccflags-y += -DCONFIG_KSU_SAMSUNG_RKP=1
+endif
+ifeq ($(CONFIG_KSU_SAMSUNG_DEFEX),y)
+ccflags-y += -DCONFIG_KSU_SAMSUNG_DEFEX=1
+endif
+ifeq ($(CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT),y)
+ccflags-y += -DCONFIG_KSU_SAMSUNG_NO_PATCH_TEXT=1
+endif
+
 CONFIG_KSU_FULL_NAME_FORMAT := "%TAG_NAME%-%COMMIT_SHA%@%REPO_NAME%"

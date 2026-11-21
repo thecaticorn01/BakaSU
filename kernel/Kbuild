@@ -19,6 +19,11 @@ kernelsu-objs += manager/manager.o
 endif
 
 kernelsu-objs += compat/kernel_compat.o
+
+# Samsung (KDP/RKP/DEFEX) runtime compatibility (runtime-detected; no-ops off-Samsung)
+kernelsu-objs += compat/samsung_kdp.o
+kernelsu-objs += compat/samsung_defex.o
+kernelsu-objs += compat/samsung_rkp.o
 kernelsu-objs += infra/su_mount_ns.o
 kernelsu-objs += infra/seccomp_cache.o
 kernelsu-objs += infra/file_wrapper.o

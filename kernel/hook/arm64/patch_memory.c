@@ -345,6 +345,12 @@ static int ksu_patch_text_cb(void *arg)
 
 int ksu_patch_text(void *dst, void *src, size_t len, int flags)
 {
+#ifdef CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT
+    // Samsung EL2 (RKP) rejects fixmap text/rodata writes; refuse live patching
+    // so syscall interception falls back to the Samsung kprobe path.
+    pr_warn("live patching disabled on Samsung EL2: dst=0x%lx len=%zu flags=0x%x\n", (unsigned long)dst, len, flags);
+    return -EOPNOTSUPP;
+#endif
     struct patch_text_info info = {
         .dst = dst,
         .src = src,

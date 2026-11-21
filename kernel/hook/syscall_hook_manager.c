@@ -8,6 +8,12 @@
 #include <trace/events/syscalls.h>
 
 #include <linux/version.h>
+#include "compat/samsung_rkp.h"
+
+// When the syscall-table dispatcher can't be installed (Samsung RKP protects
+// the table / CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT), ksu_dispatcher_nr stays < 0 and
+// we intercept the key syscalls with kprobes instead.
+static bool samsung_rkp_initialized;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task_stack.h>
 #endif
@@ -165,6 +171,20 @@ void __init ksu_syscall_hook_manager_init(void)
     syscall_unregfunc_rp = init_kretprobe("syscall_unregfunc", syscall_unregfunc_handler);
 #endif
 
+    // Samsung RKP: the dispatcher slot could not be written, so use the
+    // kprobe-based syscall fallback instead of the tracepoint dispatcher.
+    if (ksu_dispatcher_nr < 0) {
+        ret = ksu_samsung_rkp_init();
+        if (ret) {
+            pr_err("hook_manager: Samsung RKP fallback unavailable: %d\n", ret);
+            return;
+        }
+        samsung_rkp_initialized = true;
+        ksu_setuid_hook_init();
+        ksu_sucompat_init();
+        return;
+    }
+
     // Register syscall hooks via dispatcher
     ksu_register_syscall_hook(__NR_setresuid, ksu_hook_setresuid);
     ksu_register_syscall_hook(__NR_execve, ksu_hook_execve);
@@ -199,6 +219,19 @@ void __init ksu_syscall_hook_manager_init(void)
 void __exit ksu_syscall_hook_manager_exit(void)
 {
     pr_info("hook_manager: ksu_hook_manager_exit called\n");
+
+    if (samsung_rkp_initialized) {
+        ksu_samsung_rkp_exit();
+#ifdef CONFIG_KRETPROBES
+        destroy_kretprobe(&syscall_regfunc_rp);
+        destroy_kretprobe(&syscall_unregfunc_rp);
+#endif
+        ksu_sucompat_exit();
+        ksu_setuid_hook_exit();
+        samsung_rkp_initialized = false;
+        return;
+    }
+
 #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
     unregister_trace_sys_enter(ksu_sys_enter_handler, NULL);
     tracepoint_synchronize_unregister();

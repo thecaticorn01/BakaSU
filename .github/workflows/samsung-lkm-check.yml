@@ -1,0 +1,22 @@
+name: Samsung LKM Check
+
+# Compile-verifies the aarch64 kernelsu.ko with the Samsung KDP/RKP/DEFEX
+# compatibility enabled (CONFIG_KSU_SAMSUNG_*), across all GKI KMIs. This is a
+# verification gate for the Samsung port; the full signed-manager pipeline is
+# handled separately.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - samsung-port
+    paths:
+      - '.github/workflows/samsung-lkm-check.yml'
+      - 'kernel/**'
+
+jobs:
+  build-samsung-lkm:
+    uses: ./.github/workflows/build-lkm.yml
+    with:
+      samsung: true
+    secrets: inherit

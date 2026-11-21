@@ -12,6 +12,16 @@ on:
         required: false
         default: ''
         type: string
+      expected_size:
+        description: 'Custom (non-PR) manager signature size'
+        required: false
+        default: ''
+        type: string
+      expected_hash:
+        description: 'Custom (non-PR) manager signature hash'
+        required: false
+        default: ''
+        type: string
       samsung:
         description: 'enable Samsung KDP/RKP/DEFEX late-load compat (aarch64)'
         required: false
@@ -26,6 +36,16 @@ on:
         type: string
       expected_pr_build_hash:
         description: 'Custom manager signature hash'
+        required: false
+        default: ''
+        type: string
+      expected_size:
+        description: 'Custom (non-PR) manager signature size'
+        required: false
+        default: ''
+        type: string
+      expected_hash:
+        description: 'Custom (non-PR) manager signature hash'
         required: false
         default: ''
         type: string
@@ -57,4 +77,6 @@ jobs:
       arch: ${{ matrix.arch }}
       expected_pr_build_size: ${{ inputs.expected_pr_build_size || '' }}
       expected_pr_build_hash: ${{ inputs.expected_pr_build_hash || '' }}
+      expected_size: ${{ inputs.expected_size || '' }}
+      expected_hash: ${{ inputs.expected_hash || '' }}
       samsung: ${{ inputs.samsung || false }}

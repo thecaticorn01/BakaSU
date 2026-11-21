@@ -171,8 +171,10 @@ class KsuCliRepository(context: Context) {
         val out = shell.newJob()
             .add("${getKsuDaemonPath()} debug get-sign ${shellQuote(packageResourcePath)}")
             .to(ArrayList<String>(), null).exec().out
-        out.firstOrNull()?.trim()
-            .orEmpty() == "size: 0x377, hash: d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64"
+        val sign = out.firstOrNull()?.trim().orEmpty()
+        // Accept the stock Baka-SU/BakaSU key and this fork's Samsung signing key.
+        sign == "size: 0x377, hash: d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64" ||
+            sign == "size: 0x307, hash: 4fb9754b5d8721499b229a47a9a0f80a52f180a81fef8fcb474066840d13641c"
     }
 
     suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.IO) {

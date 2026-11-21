@@ -93,8 +93,13 @@ jobs:
     needs: prepare
     uses: ./.github/workflows/build-lkm.yml
     with:
-      expected_pr_build_size: ${{ needs.prepare.outputs.expected_size || '' }}
-      expected_pr_build_hash: ${{ needs.prepare.outputs.expected_hash || '' }}
+      # Actual PRs register via the PR-build slot (keeps the PR warning).
+      expected_pr_build_size: ${{ github.event_name == 'pull_request' && needs.prepare.outputs.expected_size || '' }}
+      expected_pr_build_hash: ${{ github.event_name == 'pull_request' && needs.prepare.outputs.expected_hash || '' }}
+      # Non-PR (committed-key) builds register via the normal Custom slot, so the
+      # kernel does NOT flag the manager as a PR build.
+      expected_size: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.expected_size || '' }}
+      expected_hash: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.expected_hash || '' }}
       samsung: ${{ inputs.samsung || github.ref_name == 'samsung-port' }}
     secrets: inherit
 
@@ -195,7 +200,7 @@ jobs:
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             export KSU_PACKAGE_NAME="com.resukisu.resukisu.pr${{github.event.pull_request.number}}"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME"
-          elif [ "${{ github.ref_type }}" != "tag" ] && [ "${{ github.ref_name }}" != "main" ]; then
+          elif [ "${{ github.ref_type }}" != "tag" ] && [ "${{ github.ref_name }}" != "main" ] && [ "${{ github.ref_name }}" != "samsung-port" ]; then
             export KSU_PACKAGE_NAME="com.resukisu.resukisu.dev"
             export KSU_NAME="BakaSU-DEV"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME -PKSU_NAME=$KSU_NAME"

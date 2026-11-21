@@ -17,6 +17,14 @@
 	defined(__aarch64__)
 #define SAMSUNG_RKP_BYPASS_NR (-2)
 
+/* ksu_su_compat_enabled is a jump-label static key when KSU_COMPAT_USE_STATIC_KEY
+ * is defined (BakaSU's tracepoint-hook build), or a plain bool otherwise. */
+#ifdef KSU_COMPAT_USE_STATIC_KEY
+#define ksu_su_compat_on() static_branch_unlikely(&ksu_su_compat_enabled)
+#else
+#define ksu_su_compat_on() READ_ONCE(ksu_su_compat_enabled)
+#endif
+
 struct samsung_setresuid_work {
 	struct callback_head callback;
 	uid_t old_uid;
@@ -104,7 +112,7 @@ static int newfstatat_pre(struct kprobe *probe, struct pt_regs *regs)
 	(void)probe;
 	if (consume_bypass(__NR_newfstatat))
 		return 0;
-	if (!READ_ONCE(ksu_su_compat_enabled) ||
+	if (!ksu_su_compat_on() ||
 	    !ksu_is_allow_uid_for_current(current_uid().val))
 		return 0;
 	instruction_pointer_set(regs, (unsigned long)samsung_newfstatat);
@@ -116,7 +124,7 @@ static int faccessat_pre(struct kprobe *probe, struct pt_regs *regs)
 	(void)probe;
 	if (consume_bypass(__NR_faccessat))
 		return 0;
-	if (!READ_ONCE(ksu_su_compat_enabled) ||
+	if (!ksu_su_compat_on() ||
 	    !ksu_is_allow_uid_for_current(current_uid().val))
 		return 0;
 	instruction_pointer_set(regs, (unsigned long)samsung_faccessat);
